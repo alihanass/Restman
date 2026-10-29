@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>RestMan Gourmet</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Vazirmatn:wght@400;600;800;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = { darkMode: 'class', theme: { extend: { colors: {
+  obs: { 950: '#07080a', 900: '#0d0e12', 800: '#14171f', 700: '#1e232f' },
+  gold: { 300: '#fde047', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
+}}}};
+</script>
+<style>
+  body { font-family: 'Vazirmatn', 'Outfit', sans-serif; }
+  .hidden { display: none !important; }
+  input, textarea, select { color: #fff; }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: #1e232f; border-radius: 9px; }
+
+  .glass { background: rgba(20,23,31,.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.08); }
+  .card { background: rgba(30,35,47,.5); border: 1px solid rgba(255,255,255,.06); transition: transform .3s, border-color .3s, box-shadow .3s; }
+  .card:hover { border-color: rgba(245,158,11,.4); transform: translateY(-4px); box-shadow: 0 12px 30px -12px rgba(245,158,11,.25); }
+  .gold-text { background: linear-gradient(135deg,#FFF5D6,#F59E0B 50%,#B45309); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .section-title::after { content: ''; display: block; width: 56px; height: 3px; margin: 10px auto 0; border-radius: 9px; background: linear-gradient(90deg,#f59e0b,#d97706); }
+
+  .btn-gold { position: relative; overflow: hidden; background: linear-gradient(90deg,#f59e0b,#d97706); color: #07080a; font-weight: 800; transition: filter .2s, transform .2s, box-shadow .2s; box-shadow: 0 6px 18px -8px rgba(245,158,11,.7); }
+  .btn-gold::after { content: ''; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%); transform: translateX(-120%); }
+  .btn-gold:hover::after { transform: translateX(120%); transition: transform .7s; }
+  .btn-gold:hover { filter: brightness(1.08); }
+  .btn-gold:active { transform: scale(.97); }
+
+  /* Side panels (menu drawer and cart) */
+  .side { transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+  .off-start { transform: translateX(-100%); }
+  [dir=rtl] .off-start { transform: translateX(100%); }
+  .off-end { transform: translateX(100%); }
+  [dir=rtl] .off-end { transform: translateX(-100%); }
+  .side.open { transform: none !important; }
+
+  /* Hamburger icon */
+  .burger-bar { display: block; width: 20px; height: 2px; border-radius: 2px; background: #fbbf24; transition: transform .3s, opacity .3s; }
+  .burger.open .burger-bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .burger.open .burger-bar:nth-child(2) { opacity: 0; }
+  .burger.open .burger-bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity: 0; translate: 0 16px; } to { opacity: 1; translate: 0 0; } }
+  @keyframes modalIn { from { opacity: 0; scale: .94; translate: 0 12px; } to { opacity: 1; scale: 1; translate: 0 0; } }
+  @keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.12); } }
+  @keyframes float { 0%,100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+  @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(245,158,11,.6); } 100% { box-shadow: 0 0 0 12px rgba(245,158,11,0); } }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  @keyframes toastIn { from { opacity: 0; translate: 0 20px; } to { opacity: 1; translate: 0 0; } }
+  @keyframes drift { 0%,100% { transform: translate(0,0); } 50% { transform: translate(30px,-20px); } }
+  @keyframes shake { 0%,100% { translate: 0 0; } 25% { translate: -8px 0; } 75% { translate: 8px 0; } }
+
+  .fade-up { animation: fadeUp .5s cubic-bezier(.2,.8,.2,1) both; }
+  .reveal { opacity: 0; }
+  .reveal.in { animation: fadeUp .7s cubic-bezier(.2,.8,.2,1) both; }
+  .modal-in { animation: modalIn .35s cubic-bezier(.2,.8,.2,1) both; }
+  .kenburns { animation: kenburns 18s ease-in-out infinite alternate; }
+  .float { animation: float 5s ease-in-out infinite; }
+  .pulse-ring { animation: pulseRing 1.6s infinite; }
+  .bump { animation: bump .4s ease; }
+  .toast-in { animation: toastIn .35s cubic-bezier(.2,.8,.2,1) both; }
+  .shake { animation: shake .3s ease; }
+  .blob { position: absolute; border-radius: 9999px; filter: blur(60px); opacity: .25; pointer-events: none; animation: drift 12s ease-in-out infinite; }
+
+  .stat { transition: transform .3s, border-color .3s; }
+  .stat:hover { transform: translateY(-3px); border-color: rgba(245,158,11,.4); }
+  .act { padding: .5rem .9rem; border-radius: .75rem; font-size: .8rem; font-weight: 700; transition: transform .2s, filter .2s; }
+  .act:hover { transform: translateY(-2px); filter: brightness(1.1); }
+  .act:active { transform: scale(.96); }
+  .act-ok { background: #10b981; color: #03150e; }
+  .act-go { background: #0ea5e9; color: #021019; }
+  .act-no { background: rgba(244,63,94,.12); color: #fb7185; border: 1px solid rgba(244,63,94,.4); }
+  .act-del { color: #fb7185; font-size: .75rem; opacity: .8; transition: opacity .2s; }
+  .act-del:hover { opacity: 1; }
+
+  .badge { font-size: .7rem; font-weight: 700; padding: .25rem .6rem; border-radius: 9999px; }
+  .b-new { background: rgba(245,158,11,.15); color: #fbbf24; }
+  .b-prep { background: rgba(56,189,248,.15); color: #7dd3fc; }
+  .b-way { background: rgba(167,139,250,.15); color: #c4b5fd; }
+  .b-done { background: rgba(16,185,129,.15); color: #6ee7b7; }
+  .b-cancel { background: rgba(244,63,94,.15); color: #fda4af; }
+  .tag-hot { position: absolute; top: .75rem; inset-inline-start: .75rem; z-index: 2; font-size: .7rem; font-weight: 800; padding: .3rem .7rem; border-radius: 9999px; background: rgba(7,8,10,.75); color: #fbbf24; border: 1px solid rgba(245,158,11,.4); backdrop-filter: blur(6px); }
+  .opt-on { box-shadow: 0 0 0 2px #f59e0b, 0 8px 22px -10px rgba(245,158,11,.7); }
+</style>
+</head>
+<body class="bg-obs-950 text-slate-100 antialiased overflow-x-hidden">
+
+<!-- LANGUAGE PICKER -->
+<div id="lang-picker" class="fixed inset-0 z-[70] bg-obs-950/95 backdrop-blur-md flex items-center justify-center p-4">
+  <div class="glass rounded-3xl p-8 max-w-sm w-full text-center border border-gold-500/40 modal-in">
+    <i class="fa-solid fa-burger text-gold-400 text-3xl mb-3 float inline-block"></i>
+    <h2 class="text-2xl font-black text-white mb-1">RestMan Gourmet</h2>
+    <p class="text-sm text-slate-400 mb-6">زمانەکەت هەڵبژێرە / اختر لغتك / Choose your language</p>
+    <div class="space-y-3">
+      <button onclick="setLang('ku')" class="w-full py-3 rounded-xl btn-gold text-base">کوردی</button>
+      <button onclick="setLang('ar')" class="w-full py-3 rounded-xl btn-gold text-base">العربية</button>
+      <button onclick="setLang('en')" class="w-full py-3 rounded-xl btn-gold text-base">English</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="sticky top-0 z-40 glass">
+  <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+    <a href="#hero" class="flex items-center gap-2">
+      <i class="fa-solid fa-burger text-gold-400 text-xl"></i>
+      <span class="text-xl font-black text-white">Rest<span class="gold-text">Man</span></span>
+    </a>
+
+    <nav class="hidden md:flex gap-7 text-sm text-slate-300 font-semibold">
+      <a href="#menu" class="hover:text-gold-400 transition" data-i="nav_menu"></a>
+      <a href="#builder" class="hover:text-gold-400 transition" data-i="nav_build"></a>
+      <a href="#about" class="hover:text-gold-400 transition" data-i="nav_about"></a>
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <button onclick="toggleCart(true)" class="relative w-11 h-11 rounded-xl btn-gold flex items-center justify-center" aria-label="cart">
+        <i class="fa-solid fa-basket-shopping"></i>
+        <span id="cart-count" class="absolute -top-1.5 -end-1.5 bg-obs-950 text-gold-400 text-[11px] rounded-full min-w-[20px] h-5 px-1 font-bold flex items-center justify-center border border-gold-500/50">0</span>
+      </button>
+      <button id="burger" onclick="toggleDrawer(true)" class="burger w-11 h-11 rounded-xl card flex flex-col items-center justify-center gap-1.5" aria-label="menu">
+        <span class="burger-bar"></span>
+        <span class="burger-bar"></span>
+        <span class="burger-bar"></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- SIDE MENU (three lines) -->
+<div id="backdrop" onclick="closeSides()" class="fixed inset-0 bg-black/70 z-40 hidden"></div>
+
+<aside id="drawer" class="side off-start open-ready fixed top-0 bottom-0 w-80 max-w-[85vw] bg-obs-900 z-50 flex flex-col p-6 border-e border-slate-800" style="inset-inline-start:0">
+  <div class="flex justify-between items-center pb-5 border-b border-slate-800">
+    <span class="text-xl font-black text-white">Rest<span class="gold-text">Man</span></span>
+    <button onclick="toggleDrawer(false)" class="w-10 h-10 rounded-xl card text-slate-300 hover:text-white transition hover:rotate-90 duration-300"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+
+  <nav class="flex flex-col gap-2 py-5">
+    <a href="#menu" onclick="toggleDrawer(false)" class="card rounded-xl px-4 py-3 flex items-center gap-3 font-bold"><i class="fa-solid fa-utensils text-gold-400 w-5"></i><span data-i="nav_menu"></span></a>
+    <a href="#builder" onclick="toggleDrawer(false)" class="card rounded-xl px-4 py-3 flex items-center gap-3 font-bold"><i class="fa-solid fa-wand-magic-sparkles text-gold-400 w-5"></i><span data-i="nav_build"></span></a>
+    <a href="#about" onclick="toggleDrawer(false)" class="card rounded-xl px-4 py-3 flex items-center gap-3 font-bold"><i class="fa-solid fa-circle-info text-gold-400 w-5"></i><span data-i="nav_about"></span></a>
+  </nav>
+
+  <div class="pt-4 border-t border-slate-800">
+    <p class="text-xs font-bold text-gold-400 mb-3" data-i="lang_t"></p>
+    <div class="grid grid-cols-3 gap-2">
+      <button onclick="setLang('ku')" class="py-2.5 rounded-xl card text-sm font-bold">کوردی</button>
+      <button onclick="setLang('ar')" class="py-2.5 rounded-xl card text-sm font-bold">العربية</button>
+      <button onclick="setLang('en')" class="py-2.5 rounded-xl card text-sm font-bold">English</button>
+    </div>
+  </div>
+
+  <div class="mt-auto pt-4 border-t border-slate-800">
+    <button onclick="openAdmin()" class="w-full py-3 rounded-xl card text-sm font-bold text-slate-300 hover:text-gold-400 transition flex items-center justify-center gap-2">
+      <i class="fa-solid fa-lock"></i> <span data-i="admin"></span>
+    </button>
+  </div>
+</aside>
+
+<main class="relative z-10">
+
+  <!-- HERO -->
+  <section id="hero" class="relative overflow-hidden">
+    <div class="absolute inset-0 overflow-hidden">
+      <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1600&q=80" alt="" class="kenburns w-full h-full object-cover opacity-40">
+      <div class="absolute inset-0 bg-gradient-to-b from-obs-950/30 via-obs-950/75 to-obs-950"></div>
+    </div>
+    <div class="blob bg-amber-500 w-72 h-72 -top-10 -start-10"></div>
+    <div class="blob bg-orange-600 w-80 h-80 top-20 end-0" style="animation-delay:-4s"></div>
+
+    <div class="relative max-w-6xl mx-auto px-4 pt-20 pb-20 text-center">
+      <span class="inline-block text-xs font-bold text-gold-400 border border-gold-500/40 rounded-full px-4 py-1.5 mb-6 fade-up" data-i="hero_tag"></span>
+      <h1 class="text-4xl sm:text-6xl font-black text-white leading-tight fade-up" data-i="hero_t"></h1>
+      <p class="mt-5 text-slate-300 max-w-2xl mx-auto leading-relaxed fade-up" style="animation-delay:.15s" data-i="hero_d"></p>
+      <div class="mt-8 flex flex-wrap justify-center gap-3 fade-up" style="animation-delay:.3s">
+        <a href="#menu" class="px-8 py-3.5 rounded-xl btn-gold" data-i="hero_cta"></a>
+        <a href="#builder" class="px-8 py-3.5 rounded-xl card font-bold text-white" data-i="hero_cta2"></a>
+      </div>
+
+      <div class="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto fade-up" style="animation-delay:.45s">
+        <div class="glass rounded-2xl p-4 flex items-center gap-3"><i class="fa-solid fa-medal text-gold-400 text-xl"></i><span class="font-bold text-sm" data-i="f1"></span></div>
+        <div class="glass rounded-2xl p-4 flex items-center gap-3"><i class="fa-solid fa-motorcycle text-gold-400 text-xl"></i><span class="font-bold text-sm" data-i="f2"></span></div>
+        <div class="glass rounded-2xl p-4 flex items-center gap-3"><i class="fa-solid fa-leaf text-gold-400 text-xl"></i><span class="font-bold text-sm" data-i="f3"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MENU -->
+  <section id="menu" class="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
+    <h2 class="text-3xl font-black text-white text-center mb-2 section-title reveal" data-i="menu_t"></h2>
+    <p class="text-center text-slate-400 text-sm mb-8 reveal" data-i="menu_sub"></p>
+
+    <div class="flex gap-2 overflow-x-auto pb-3 mb-6 justify-start md:justify-center" id="cats"></div>
+
+    <div class="relative max-w-md mx-auto mb-10">
+      <i class="fa-solid fa-magnifying-glass absolute top-1/2 -translate-y-1/2 start-4 text-slate-500"></i>
+      <input id="search" type="text" oninput="renderMenu()" data-ph="search" class="w-full bg-obs-900 border border-slate-800 rounded-xl ps-11 pe-4 py-3 text-sm focus:border-gold-500 outline-none transition">
+    </div>
+
+    <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </section>
+
+  <!-- CUSTOM BUILDER -->
+  <section id="builder" class="max-w-6xl mx-auto px-4 py-16 scroll-mt-20 border-t border-slate-800/70">
+    <h2 class="text-3xl font-black text-white text-center mb-10 section-title reveal" data-i="build_t"></h2>
+    <div class="grid lg:grid-cols-12 gap-8">
+      <div class="lg:col-span-7 glass rounded-3xl p-6 sm:p-8 space-y-7 reveal">
+        <div class="flex rounded-2xl p-1 bg-obs-950 border border-slate-800">
+          <button id="bt-pizza" onclick="setBType('pizza')" class="w-1/2 py-3 rounded-xl font-bold text-sm transition"></button>
+          <button id="bt-burger" onclick="setBType('burger')" class="w-1/2 py-3 rounded-xl font-bold text-sm transition"></button>
+        </div>
+        <div><p class="text-xs font-bold text-gold-400 mb-3" data-i="size"></p><div id="b-base" class="grid grid-cols-3 gap-3"></div></div>
+        <div><p class="text-xs font-bold text-gold-400 mb-3" data-i="sauce"></p><div id="b-sauce" class="grid grid-cols-2 gap-3"></div></div>
+        <div><p class="text-xs font-bold text-gold-400 mb-3" data-i="extras"></p><div id="b-tops" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div></div>
+      </div>
+
+      <div class="lg:col-span-5 glass rounded-3xl p-6 sm:p-8 text-center border border-gold-500/30 reveal lg:sticky lg:top-24 self-start">
+        <div class="overflow-hidden rounded-2xl mb-6">
+          <img id="b-img" alt="" class="w-full h-52 object-cover transition duration-500 hover:scale-105">
+        </div>
+        <p class="text-slate-400 text-sm mb-1" data-i="preview"></p>
+        <div id="b-price" class="text-4xl font-black text-gold-400 font-mono mb-6">0</div>
+        <button onclick="addBuilt()" class="w-full py-4 rounded-xl btn-gold" data-i="add_built"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="max-w-6xl mx-auto px-4 py-16 scroll-mt-20 border-t border-slate-800/70 text-center reveal">
+    <h2 class="text-3xl font-black text-white mb-4 section-title" data-i="nav_about"></h2>
+    <p class="text-slate-400 max-w-2xl mx-auto leading-relaxed" data-i="about_t"></p>
+  </section>
+</main>
+
+<!-- FOOTER -->
+<footer class="border-t border-slate-800 py-12 mt-10 bg-obs-900/40">
+  <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-3 gap-8 text-sm text-slate-400">
+    <div>
+      <h4 class="font-bold text-gold-400 mb-2 flex items-center gap-2"><i class="fa-regular fa-clock"></i> <span data-i="hours"></span></h4>
+      <p data-i="hours_v"></p>
+    </div>
+    <div>
+      <h4 class="font-bold text-gold-400 mb-2 flex items-center gap-2"><i class="fa-solid fa-phone"></i> <span data-i="contact"></span></h4>
+      <p dir="ltr" class="text-start">+964 750 123 4567</p>
+      <p data-i="addr"></p>
+    </div>
+    <div class="md:text-end">
+      <p class="font-bold text-white mb-2">RestMan Gourmet</p>
+      <p data-i="footer"></p>
+    </div>
+  </div>
+</footer>
+
+<!-- CART DRAWER -->
+<aside id="cart" class="side off-end fixed top-0 bottom-0 w-full max-w-md bg-obs-900 z-50 flex flex-col p-6 border-s border-slate-800" style="inset-inline-end:0">
+  <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+    <h3 class="font-black text-white text-lg flex items-center gap-2"><i class="fa-solid fa-basket-shopping text-gold-400"></i> <span data-i="cart"></span></h3>
+    <button onclick="toggleCart(false)" class="w-10 h-10 rounded-xl card text-slate-300 hover:text-white transition hover:rotate-90 duration-300"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="cart-items" class="flex-1 overflow-y-auto py-4 space-y-3"></div>
+  <div class="border-t border-slate-800 pt-4 space-y-3">
+    <div class="flex gap-2">
+      <input id="promo" type="text" data-ph="promo" class="flex-1 bg-obs-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm uppercase outline-none focus:border-gold-500 transition">
+      <button onclick="applyPromo()" class="px-4 rounded-xl card text-gold-400 text-sm font-bold" data-i="apply"></button>
+    </div>
+    <div class="text-sm space-y-1.5 text-slate-400">
+      <div class="flex justify-between"><span data-i="sub"></span><span id="c-sub" class="font-mono"></span></div>
+      <div class="flex justify-between"><span data-i="disc"></span><span id="c-disc" class="font-mono text-emerald-400"></span></div>
+    </div>
+    <div class="flex justify-between font-black text-white text-lg"><span data-i="grand_cart"></span><span id="c-total" class="font-mono text-gold-400"></span></div>
+    <button onclick="openCheckout()" class="w-full py-3.5 rounded-xl btn-gold" data-i="checkout"></button>
+  </div>
+</aside>
+
+<!-- CHECKOUT MODAL -->
+<div id="checkout" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+  <div class="glass rounded-3xl p-6 sm:p-7 max-w-lg w-full max-h-[90vh] overflow-y-auto relative modal-in">
+    <button onclick="closeModal('checkout')" class="absolute top-4 end-4 w-9 h-9 rounded-lg card text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+    <h3 class="text-xl font-black text-white mb-5" data-i="checkout"></h3>
+    <form id="order-form" onsubmit="submitOrder(event)" class="space-y-4">
+      <div class="grid grid-cols-2 gap-2 p-1 bg-obs-950 rounded-xl border border-slate-800">
+        <label class="text-center py-2.5 rounded-lg text-sm font-bold cursor-pointer transition"><input type="radio" name="otype" value="delivery" checked class="hidden"><span data-i="delivery"></span></label>
+        <label class="text-center py-2.5 rounded-lg text-sm font-bold cursor-pointer transition"><input type="radio" name="otype" value="takeaway" class="hidden"><span data-i="takeaway"></span></label>
+      </div>
+      <input name="cname" required data-ph="name" class="w-full bg-obs-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gold-500 transition">
+      <input name="cphone" required type="tel" data-ph="phone" dir="ltr" class="w-full bg-obs-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gold-500 transition">
+      <textarea name="caddr" id="caddr" rows="2" data-ph="address" class="w-full bg-obs-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gold-500 transition"></textarea>
+      <div>
+        <p class="text-xs text-gold-400 font-bold mb-2" data-i="pay"></p>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="card rounded-xl p-3 text-sm flex items-center gap-2 cursor-pointer"><input type="radio" name="pay" value="cash" checked class="accent-amber-500"> <span data-i="cash"></span></label>
+          <label class="card rounded-xl p-3 text-sm flex items-center gap-2 cursor-pointer"><input type="radio" name="pay" value="card" class="accent-amber-500"> <span data-i="card"></span></label>
+        </div>
+      </div>
+      <div class="flex justify-between items-center font-black text-gold-400 pt-2 border-t border-slate-800"><span data-i="grand_cart"></span><span id="co-total" class="font-mono text-xl"></span></div>
+      <button type="submit" class="w-full py-4 rounded-xl btn-gold" data-i="send"></button>
+    </form>
+  </div>
+</div>
+
+<!-- DONE MODAL -->
+<div id="done" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+  <div class="glass rounded-3xl p-8 max-w-sm w-full text-center border border-gold-500/40 modal-in">
+    <i class="fa-solid fa-circle-check text-emerald-400 text-5xl mb-4 float inline-block"></i>
+    <h3 class="text-xl font-black text-white mb-2" data-i="done"></h3>
+    <p class="text-sm text-slate-400 mb-6"><span data-i="orderno"></span>: <span id="done-id" class="text-gold-400 font-mono font-bold"></span></p>
+    <button onclick="closeModal('done')" class="w-full py-3 rounded-xl btn-gold" data-i="ok"></button>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div id="admin-login" class="fixed inset-0 bg-black/85 z-[60] hidden flex items-center justify-center p-4">
+  <div id="login-box" class="glass rounded-3xl p-8 max-w-sm w-full relative modal-in">
+    <button onclick="closeModal('admin-login')" class="absolute top-4 end-4 w-9 h-9 rounded-lg card text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+    <div class="text-center mb-6">
+      <i class="fa-solid fa-user-shield text-gold-400 text-3xl mb-2"></i>
+      <h3 class="text-xl font-black text-white" data-i="login"></h3>
+    </div>
+    <input id="a-user" data-ph="user" class="w-full mb-3 bg-obs-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gold-500 transition">
+    <input id="a-pass" type="password" data-ph="pass" class="w-full mb-3 bg-obs-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-gold-500 transition">
+    <p id="a-err" class="text-rose-400 text-xs mb-3 hidden" data-i="wrong"></p>
+    <button onclick="adminLogin()" class="w-full py-3 rounded-xl btn-gold" data-i="login"></button>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="admin-panel" class="fixed inset-0 bg-obs-950 z-[55] hidden overflow-y-auto">
+  <div class="max-w-5xl mx-auto p-4 sm:p-6">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6 fade-up">
+      <h2 class="text-2xl font-black text-white flex items-center gap-2">
+        <i class="fa-solid fa-receipt text-gold-400"></i> <span data-i="orders_t"></span>
+        <span id="new-badge" class="text-sm bg-gold-500 text-obs-950 rounded-full px-2.5 font-bold pulse-ring hidden"></span>
+      </h2>
+      <div class="flex gap-2">
+        <button onclick="refreshAdmin(true)" class="px-4 py-2 rounded-xl card text-sm text-gold-400" data-i="refresh"></button>
+        <button onclick="clearOrders()" class="px-4 py-2 rounded-xl card text-sm text-rose-400" data-i="clear"></button>
+        <button onclick="adminLogout()" class="px-4 py-2 rounded-xl card text-sm" data-i="logout"></button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="glass stat rounded-2xl p-5 fade-up"><p class="text-xs text-slate-400" data-i="stats_total"></p><p id="stat-total" class="text-3xl font-black text-white font-mono mt-1">0</p></div>
+      <div class="glass stat rounded-2xl p-5 fade-up" style="animation-delay:.08s"><p class="text-xs text-slate-400" data-i="stats_new"></p><p id="stat-new" class="text-3xl font-black text-gold-400 font-mono mt-1">0</p></div>
+      <div class="glass stat rounded-2xl p-5 fade-up" style="animation-delay:.16s"><p class="text-xs text-slate-400" data-i="stats_active"></p><p id="stat-active" class="text-3xl font-black text-sky-400 font-mono mt-1">0</p></div>
+      <div class="glass stat rounded-2xl p-5 fade-up" style="animation-delay:.24s"><p class="text-xs text-slate-400" data-i="stats_rev"></p><p id="stat-rev" class="text-lg font-black text-emerald-400 font-mono mt-2">0</p></div>
+    </div>
+
+    <div id="a-filters" class="flex gap-2 overflow-x-auto pb-2 mb-5"></div>
+    <div id="admin-list" class="space-y-4"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 glass rounded-xl px-5 py-3 text-sm text-white z-[80] hidden"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const DELIVERY_FEE = 3000;
+const PROMO = { code: 'RESTMAN20', rate: 0.20 };
+const API_BASE_URL = 'https://alihussen1.pythonanywhere.com';
+const FILTERS = ['all', 'new', 'prep', 'way', 'done', 'cancel'];
+
+/* ================= TEXT ================= */
+const LANGS = { ku: { name: 'کوردی', dir: 'rtl' }, ar: { name: 'العربية', dir: 'rtl' }, en: { name: 'English', dir: 'ltr' } };
+const TX = {
+  ku: { cur:'د.ع', nav_menu:'مێنیو', nav_build:'دروستکردنی تایبەت', nav_about:'دەربارە', cart:'سەبەتە', lang_t:'زمان',
+    hero_tag:'باشترین بەرگر و پیتزای شار', hero_t:'خواردنی بەتام، گەیاندنی خێرا', hero_d:'بەرگر، پیتزا و ستیکی تازە بە کوالیتی بەرز. داواکارییەکەت لە چەند چرکەیەکدا بنێرە.',
+    hero_cta:'بینینی مێنیو', hero_cta2:'دروستکردنی تایبەت', f1:'کوالیتی بەرز', f2:'گەیاندنی خێرا', f3:'تازە ڕۆژانە',
+    search:'گەڕان بۆ خواردن...', promo:'کۆدی داشکاندن', name:'ناوی تەواو', phone:'ژمارەی مۆبایل', address:'ناونیشانی گەیاندن', user:'ناوی بەکارهێنەر', pass:'وشەی نهێنی',
+    all:'هەمووی', burger:'بەرگر', pizza:'پیتزا', pasta:'ستیک و پاستا', drink:'خواردنەوە', dessert:'شیرینی',
+    menu_t:'مێنیووەکەمان', menu_sub:'هەموو خواردنەکان بە هەویری تازە و مادەی هەڵبژێردراو ئامادە دەکرێن', build_t:'پیتزا یان بەرگری تایبەت خۆت دروست بکە', bt_pizza:'پیتزا', bt_burger:'بەرگر', size:'قەبارە / هەویر', sauce:'سۆس', extras:'زیادەکان',
+    preview:'کۆی نرخی داهێنانەکەت', add_built:'زیادکردن بۆ سەبەتە', about_t:'RestMan هەموو ڕۆژێک خواردنی تازە ئامادە دەکات و بە گەرمی دەیگەیەنێتە دەرگای ماڵت.',
+    add:'زیادکردن', empty:'سەبەتەکەت بەتاڵە', sub:'کۆی خواردن', disc:'داشکاندن', fee:'کرێی گەیاندن', grand_cart:'کۆی گشتی', apply:'جێبەجێکردن', checkout:'تەواوکردنی داواکاری',
+    delivery:'گەیاندن', takeaway:'وەرگرتن', pay:'شێوازی پارەدان', cash:'نەقد', card:'کارت', send:'ناردنی داواکاری',
+    done:'داواکارییەکەت وەرگیرا!', orderno:'ژمارەی داواکاری', ok:'باشە', admin:'بەڕێوەبەر', login:'چوونەژوورەوە', wrong:'ناوی بەکارهێنەر یان وشەی نهێنی هەڵەیە',
+    logout:'دەرچوون', refresh:'نوێکردنەوە', clear:'سڕینەوەی هەموو', orders_t:'داواکارییەکان', none:'هیچ داواکارییەک نییە', total:'کۆی گشتی', del:'سڕینەوە', delivery_to:'گەیاندن بۆ',
+    hours:'کاتی کارکردن', hours_v:'هەموو ڕۆژێک: ١١:٠٠ی بەیانی - ١٢:٠٠ی شەو', contact:'پەیوەندی', addr:'سلێمانی', footer:'© 2026 RestMan Gourmet',
+    st:{ new:'نوێ', prep:'ئامادەکردن', way:'لە ڕێگایە', done:'گەیشت', cancel:'ڕەفزکراو' },
+    stats_total:'کۆی داواکاری', stats_new:'نوێ', stats_active:'چالاک', stats_rev:'کۆی داهات', f_all:'هەمووی',
+    accept:'وەرگرتن', reject:'ڕەفزکردن', next_way:'ناردن بۆ ڕێگا', next_done:'گەیاندرا', accepted:'داواکاری وەرگیرا', rejected:'داواکاری ڕەفز کرا', moved:'دۆخ نوێکرایەوە', newOrder:'داواکاری نوێ هات!', deleted:'سڕایەوە',
+    pizzaName:'پیتزای تایبەت', burgerName:'بەرگری تایبەت', added:'زیادکرا بۆ سەبەتە', promoOk:'داشکاندنی ٢٠٪ جێبەجێ کرا', promoBad:'کۆدەکە هەڵەیە', needName:'تکایە ناو و ژمارە پڕ بکەرەوە', needAddr:'تکایە ناونیشان بنووسە', hot:'باوەڕپێکراو' },
+  ar: { cur:'د.ع', nav_menu:'القائمة', nav_build:'صمّم بنفسك', nav_about:'من نحن', cart:'السلة', lang_t:'اللغة',
+    hero_tag:'أفضل برغر وبيتزا في المدينة', hero_t:'طعم لذيذ، توصيل سريع', hero_d:'برغر وبيتزا وستيك طازج بأعلى جودة. اطلب طلبك في ثوانٍ.',
+    hero_cta:'تصفح القائمة', hero_cta2:'صمّم طلبك', f1:'جودة عالية', f2:'توصيل سريع', f3:'طازج يومياً',
+    search:'ابحث عن طعامك...', promo:'كود الخصم', name:'الاسم الكامل', phone:'رقم الهاتف', address:'عنوان التوصيل', user:'اسم المستخدم', pass:'كلمة المرور',
+    all:'الكل', burger:'برغر', pizza:'بيتزا', pasta:'ستيك وباستا', drink:'مشروبات', dessert:'حلويات',
+    menu_t:'قائمتنا', menu_sub:'كل طبق يُحضّر بعجينة طازجة ومكونات مختارة', build_t:'صمّم بيتزا أو برغر خاص بك', bt_pizza:'بيتزا', bt_burger:'برغر', size:'الحجم / الخبز', sauce:'الصلصة', extras:'إضافات',
+    preview:'السعر الإجمالي', add_built:'أضف إلى السلة', about_t:'RestMan يحضّر طعاماً طازجاً كل يوم ويوصله إلى باب بيتك ساخناً.',
+    add:'أضف', empty:'سلتك فارغة', sub:'مجموع الطعام', disc:'الخصم', fee:'رسوم التوصيل', grand_cart:'المجموع', apply:'تطبيق', checkout:'إتمام الطلب',
+    delivery:'توصيل', takeaway:'استلام', pay:'طريقة الدفع', cash:'نقداً', card:'بطاقة', send:'إرسال الطلب',
+    done:'تم استلام طلبك!', orderno:'رقم الطلب', ok:'حسناً', admin:'الإدارة', login:'تسجيل الدخول', wrong:'اسم المستخدم أو كلمة المرور غير صحيحة',
+    logout:'خروج', refresh:'تحديث', clear:'حذف الكل', orders_t:'الطلبات', none:'لا توجد طلبات', total:'الإجمالي', del:'حذف', delivery_to:'توصيل إلى',
+    hours:'ساعات العمل', hours_v:'يومياً: ١١:٠٠ ص - ١٢:٠٠ ل', contact:'اتصل بنا', addr:'السليمانية', footer:'© 2026 RestMan Gourmet',
+    st:{ new:'جديد', prep:'قيد التحضير', way:'في الطريق', done:'تم التسليم', cancel:'مرفوض' },
+    stats_total:'إجمالي الطلبات', stats_new:'جديد', stats_active:'نشط', stats_rev:'إجمالي الإيرادات', f_all:'الكل',
+    accept:'قبول', reject:'رفض', next_way:'إرسال للتوصيل', next_done:'تم التسليم', accepted:'تم قبول الطلب', rejected:'تم رفض الطلب', moved:'تم تحديث الحالة', newOrder:'طلب جديد وصل!', deleted:'تم الحذف',
+    pizzaName:'بيتزا خاصة', burgerName:'برغر خاص', added:'تمت الإضافة إلى السلة', promoOk:'تم تطبيق خصم 20٪', promoBad:'الكود غير صحيح', needName:'يرجى ملء الاسم والرقم', needAddr:'يرجى كتابة العنوان', hot:'الأكثر طلباً' },
+  en: { cur:'IQD', nav_menu:'Menu', nav_build:'Build Your Own', nav_about:'About', cart:'Cart', lang_t:'Language',
+    hero_tag:'The best burgers and pizzas in town', hero_t:'Exquisite Flavors, Delivered Fast', hero_d:'Gourmet burgers, pizzas and steaks made with fresh ingredients. Order in seconds.',
+    hero_cta:'Explore Menu', hero_cta2:'Build Your Own', f1:'Premium quality', f2:'Fast delivery', f3:'Fresh every day',
+    search:'Search dishes...', promo:'Promo code', name:'Full name', phone:'Phone number', address:'Delivery address', user:'Username', pass:'Password',
+    all:'All', burger:'Burgers', pizza:'Pizzas', pasta:'Steaks & Pasta', drink:'Drinks', dessert:'Desserts',
+    menu_t:'Our Menu', menu_sub:'Every dish is made fresh with carefully chosen ingredients', build_t:'Build Your Own Pizza or Burger', bt_pizza:'Pizza', bt_burger:'Burger', size:'Size / Bun', sauce:'Sauce', extras:'Extras',
+    preview:'Your total', add_built:'Add to Cart', about_t:'RestMan prepares fresh food every day and delivers it hot to your door.',
+    add:'Add', empty:'Your cart is empty', sub:'Subtotal', disc:'Discount', fee:'Delivery fee', grand_cart:'Total', apply:'Apply', checkout:'Checkout',
+    delivery:'Delivery', takeaway:'Takeaway', pay:'Payment method', cash:'Cash', card:'Card', send:'Place Order',
+    done:'Your order is received!', orderno:'Order number', ok:'OK', admin:'Admin', login:'Log in', wrong:'Wrong username or password',
+    logout:'Log out', refresh:'Refresh', clear:'Clear all', orders_t:'Orders', none:'No orders yet', total:'Total', del:'Delete', delivery_to:'Deliver to',
+    hours:'Opening hours', hours_v:'Daily: 11:00 AM - 12:00 AM', contact:'Contact', addr:'Sulaymaniyah', footer:'© 2026 RestMan Gourmet',
+    st:{ new:'New', prep:'Preparing', way:'On the way', done:'Delivered', cancel:'Rejected' },
+    stats_total:'Total orders', stats_new:'New', stats_active:'Active', stats_rev:'Total revenue', f_all:'All',
+    accept:'Accept', reject:'Reject', next_way:'Send for delivery', next_done:'Delivered', accepted:'Order accepted', rejected:'Order rejected', moved:'Status updated', newOrder:'New order received!', deleted:'Deleted',
+    pizzaName:'Custom Pizza', burgerName:'Custom Burger', added:'Added to cart', promoOk:'20% discount applied', promoBad:'Invalid promo code', needName:'Please fill in name and phone', needAddr:'Please enter the address', hot:'Best seller' }
+};
+
+const MENU = [
+  { id:1, c:'burger', p:12500, hot:true,  img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80', n:{ku:'بەرگری دووانە',ar:'برغر مزدوج',en:'Double Burger'} },
+  { id:2, c:'burger', p:13500, hot:false, img:'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80', n:{ku:'بەرگری بەیکن',ar:'برغر باكون',en:'Bacon Burger'} },
+  { id:3, c:'pizza',  p:16000, hot:true,  img:'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80', n:{ku:'پیتزای ترافیل',ar:'بيتزا التروفل',en:'Truffle Pizza'} },
+  { id:4, c:'pizza',  p:15000, hot:false, img:'https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=600&q=80', n:{ku:'پیتزای پپرۆنی',ar:'بيتزا ببروني',en:'Pepperoni Pizza'} },
+  { id:5, c:'pasta',  p:28000, hot:false, img:'https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=600&q=80', n:{ku:'ستیکی ڕیب ئای',ar:'ستيك ريب آي',en:'Ribeye Steak'} },
+  { id:6, c:'pasta',  p:14000, hot:false, img:'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=600&q=80', n:{ku:'پاستای ئالفریدۆ',ar:'باستا ألفريدو',en:'Chicken Alfredo'} },
+  { id:7, c:'dessert',p:7500, hot:false, img:'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80', n:{ku:'کێکی شوکولاتە',ar:'كيك الشوكولاتة',en:'Chocolate Lava Cake'} },
+  { id:8, c:'drink',  p:4500, hot:false, img:'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=600&q=80', n:{ku:'مۆخیتۆی فرێش',ar:'موهيتو طازج',en:'Fresh Mojito'} }
+];
+const CATS = ['all','burger','pizza','pasta','drink','dessert'];
+const BUILD = {
+  pizza: { img:'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
+    base:[{ku:'بچووک',ar:'صغير',en:'Small',p:7000},{ku:'ناوەند',ar:'وسط',en:'Medium',p:10000},{ku:'گەورە',ar:'كبير',en:'Large',p:14000}],
+    sauce:[{ku:'تەماتە',ar:'طماطم',en:'Tomato',p:1000},{ku:'ئالفریدۆ',ar:'ألفريدو',en:'Alfredo',p:1500}],
+    tops:[{ku:'پپرۆنی',ar:'ببروني',en:'Pepperoni',p:1500},{ku:'قارچک',ar:'فطر',en:'Mushroom',p:1000},{ku:'زەیتوون',ar:'زيتون',en:'Olives',p:1000}] },
+  burger: { img:'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
+    base:[{ku:'تاک',ar:'مفرد',en:'Single',p:6000},{ku:'جووت',ar:'مزدوج',en:'Double',p:9000},{ku:'سیانی',ar:'ثلاثي',en:'Triple',p:12000}],
+    sauce:[{ku:'RestMan',ar:'RestMan',en:'RestMan',p:1000},{ku:'پەنیری چێدەر',ar:'جبنة شيدر',en:'Cheddar',p:1500}],
+    tops:[{ku:'بەیکن',ar:'باكون',en:'Bacon',p:2000},{ku:'پیازی برژاو',ar:'بصل مقلي',en:'Fried Onion',p:1000}] }
+};
+
+/* ================= STATE ================= */
+let lang = 'ku', cat = 'all', cart = [], discount = 0, orders = [], isAdmin = false, adminToken = null, lastNew = 0, refreshingOrders = false;
+let bType = 'pizza', bBase = 1, bSauce = 0, bTops = [];
+let aFilter = 'all';
+const seenOrders = new Set();
+
+const t = k => (TX[lang] && TX[lang][k] !== undefined) ? TX[lang][k] : (TX.en[k] || k);
+const money = n => n.toLocaleString('en-US') + ' ' + t('cur');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+
+/* ================= REVEAL ON SCROLL ================= */
+const io = new IntersectionObserver(entries => entries.forEach(e => {
+  if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+}), { threshold: 0.12 });
+function revealAll() { document.querySelectorAll('.reveal:not(.in)').forEach(el => io.observe(el)); }
+
+/* ================= SIDE PANELS ================= */
+function toggleDrawer(show) {
+  $('drawer').classList.toggle('open', show);
+  $('burger').classList.toggle('open', show);
+  if (show) $('cart').classList.remove('open');
+  updateBackdrop();
+}
+function toggleCart(show) {
+  $('cart').classList.toggle('open', show);
+  if (show) $('drawer').classList.remove('open');
+  $('burger').classList.remove('open');
+  updateBackdrop();
+}
+function closeSides() {
+  $('drawer').classList.remove('open');
+  $('cart').classList.remove('open');
+  $('burger').classList.remove('open');
+  updateBackdrop();
+}
+function updateBackdrop() {
+  const open = $('drawer').classList.contains('open') || $('cart').classList.contains('open');
+  $('backdrop').classList.toggle('hidden', !open);
+}
+
+/* ================= LANGUAGE ================= */
+function setLang(l) {
+  lang = l;
+  document.documentElement.lang = l;
+  document.documentElement.dir = LANGS[l].dir;
+  $('lang-label') && ($('lang-label').textContent = LANGS[l].name);
+  document.querySelectorAll('[data-i]').forEach(el => el.textContent = t(el.dataset.i));
+  document.querySelectorAll('[data-ph]').forEach(el => el.placeholder = t(el.dataset.ph));
+  $('lang-picker').classList.add('hidden');
+  renderCats(); renderMenu(); renderBuilder(); renderCart(); renderAdmin();
+}
+
+/* ================= MENU ================= */
+function renderCats() {
+  $('cats').innerHTML = CATS.map(c => `
+    <button onclick="setCat('${c}')" class="px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition duration-300 ${cat === c ? 'btn-gold scale-105' : 'card text-slate-300'}">${t(c)}</button>`).join('');
+}
+function setCat(c) { cat = c; renderCats(); renderMenu(); }
+function renderMenu() {
+  const q = ($('search').value || '').toLowerCase();
+  const items = MENU.filter(m => (cat === 'all' || m.c === cat) && m.n[lang].toLowerCase().includes(q));
+  if (!items.length) {
+    $('menu-grid').innerHTML = `<p class="col-span-full text-center text-slate-500 py-12">${t('none')}</p>`;
+    return;
+  }
+  $('menu-grid').innerHTML = items.map((m, i) => `
+    <div class="card reveal rounded-3xl overflow-hidden flex flex-col" style="transition-delay:${i * 0.05}s">
+      <div class="relative w-full h-52 overflow-hidden bg-obs-900">
+        ${m.hot ? `<span class="tag-hot">★ ${t('hot')}</span>` : ''}
+        <img src="${m.img}" alt="${esc(m.n[lang])}" loading="lazy" class="w-full h-full object-cover transition duration-700 hover:scale-110">
+      </div>
+      <div class="p-5 flex items-center justify-between gap-3 mt-auto">
+        <div>
+          <h3 class="font-bold text-white">${esc(m.n[lang])}</h3>
+          <p class="text-gold-400 font-mono text-sm mt-1">${money(m.p)}</p>
+        </div>
+        <button onclick="addMenu(${m.id})" class="w-11 h-11 rounded-xl btn-gold flex items-center justify-center" aria-label="${t('add')}"><i class="fa-solid fa-plus"></i></button>
+      </div>
+    </div>`).join('');
+  revealAll();
+}
+function addMenu(id) {
+  const m = MENU.find(x => x.id === id);
+  if (m) addItem(m.n[lang], m.p);
+}
+
+/* ================= BUILDER ================= */
+function setBType(type) { bType = type; bBase = 1; bSauce = 0; bTops = []; renderBuilder(); }
+function renderBuilder() {
+  const d = BUILD[bType];
+  $('bt-pizza').className = `w-1/2 py-3 rounded-xl font-bold text-sm transition duration-300 ${bType === 'pizza' ? 'btn-gold' : 'text-slate-400'}`;
+  $('bt-burger').className = `w-1/2 py-3 rounded-xl font-bold text-sm transition duration-300 ${bType === 'burger' ? 'btn-gold' : 'text-slate-400'}`;
+  $('bt-pizza').textContent = t('bt_pizza'); $('bt-burger').textContent = t('bt_burger');
+  $('b-img').src = d.img;
+  $('b-img').alt = bType === 'pizza' ? t('bt_pizza') : t('bt_burger');
+  const opts = (arr, sel, fn) => arr.map((o, i) => `
+    <button onclick="${fn}(${i})" class="p-3 rounded-xl text-sm font-bold transition duration-300 hover:-translate-y-1 ${sel === i ? 'btn-gold opt-on' : 'card text-white'}">
+      ${o[lang]}<br><span class="text-xs opacity-80 font-mono">${money(o.p)}</span>
+    </button>`).join('');
+  $('b-base').innerHTML = opts(d.base, bBase, 'pickBase');
+  $('b-sauce').innerHTML = opts(d.sauce, bSauce, 'pickSauce');
+  $('b-tops').innerHTML = d.tops.map((o, i) => `
+    <label class="card rounded-xl p-3 text-sm flex justify-between items-center cursor-pointer">
+      <span>${o[lang]}</span><input type="checkbox" ${bTops.includes(i) ? 'checked' : ''} onchange="toggleTop(${i})" class="accent-amber-500 w-4 h-4">
+    </label>`).join('');
+  const pr = $('b-price');
+  pr.textContent = money(builtPrice());
+  pr.classList.remove('bump'); void pr.offsetWidth; pr.classList.add('bump');
+}
+function pickBase(i) { bBase = i; renderBuilder(); }
+function pickSauce(i) { bSauce = i; renderBuilder(); }
+function toggleTop(i) { bTops = bTops.includes(i) ? bTops.filter(x => x !== i) : [...bTops, i]; renderBuilder(); }
+function builtPrice() {
+  const d = BUILD[bType];
+  return d.base[bBase].p + d.sauce[bSauce].p + bTops.reduce((s, i) => s + d.tops[i].p, 0);
+}
+function addBuilt() {
+  const d = BUILD[bType];
+  const name = (bType === 'pizza' ? t('pizzaName') : t('burgerName')) + ': ' + d.base[bBase][lang];
+  const note = [d.sauce[bSauce][lang], ...bTops.map(i => d.tops[i][lang])].join(', ');
+  addItem(name, builtPrice(), note);
+}
+
+/* ================= CART ================= */
+function addItem(name, price, note = '') {
+  const found = cart.find(c => c.name === name && c.note === note);
+  if (found) found.qty++; else cart.push({ name, price, qty: 1, note });
+  renderCart();
+  toast(t('added'));
+}
+function changeQty(i, d) {
+  cart[i].qty += d;
+  if (cart[i].qty <= 0) cart.splice(i, 1);
+  renderCart();
+}
+function subtotal() { return cart.reduce((s, c) => s + c.price * c.qty, 0); }
+function totals(type = 'delivery') {
+  const sub = subtotal();
+  const disc = Math.round(sub * discount);
+  const fee = sub > 0 && type === 'delivery' ? DELIVERY_FEE : 0;
+  return { sub, disc, fee, total: sub - disc + fee };
+}
+function renderCart() {
+  const count = cart.reduce((s, c) => s + c.qty, 0);
+  const cc = $('cart-count');
+  if (cc.textContent !== String(count)) { cc.textContent = count; cc.classList.remove('bump'); void cc.offsetWidth; cc.classList.add('bump'); }
+  $('cart-items').innerHTML = cart.length ? cart.map((c, i) => `
+    <div class="card rounded-2xl p-3 flex justify-between items-center fade-up">
+      <div>
+        <p class="font-bold text-white text-sm">${esc(c.name)}</p>
+        ${c.note ? `<p class="text-xs text-slate-400 mt-0.5">${esc(c.note)}</p>` : ''}
+        <p class="text-gold-400 font-mono text-xs mt-1">${money(c.price * c.qty)}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="changeQty(${i},-1)" class="w-8 h-8 rounded-lg bg-slate-800 transition hover:bg-slate-700 active:scale-90"><i class="fa-solid fa-minus text-xs"></i></button>
+        <span class="font-mono w-5 text-center">${c.qty}</span>
+        <button onclick="changeQty(${i},1)" class="w-8 h-8 rounded-lg bg-slate-800 transition hover:bg-slate-700 active:scale-90"><i class="fa-solid fa-plus text-xs"></i></button>
+      </div>
+    </div>`).join('') : `
+    <div class="text-center text-slate-500 py-16 fade-up">
+      <i class="fa-solid fa-basket-shopping text-4xl mb-4 opacity-40"></i>
+      <p>${t('empty')}</p>
+    </div>`;
+  const tt = totals();
+  $('c-sub').textContent = money(tt.sub);
+  $('c-disc').textContent = tt.disc ? '-' + money(tt.disc) : '-';
+  $('c-total').textContent = money(tt.sub ? tt.total : 0);
+}
+function applyPromo() {
+  if ($('promo').value.trim().toUpperCase() === PROMO.code) { discount = PROMO.rate; toast(t('promoOk')); }
+  else { discount = 0; toast(t('promoBad')); }
+  renderCart();
+}
+
+/* ================= CHECKOUT ================= */
+function openCheckout() {
+  if (!cart.length) return toast(t('empty'));
+  toggleCart(false);
+  updateCheckoutTotal();
+  $('checkout').classList.remove('hidden');
+}
+function updateCheckoutTotal() {
+  const type = document.querySelector('input[name=otype]:checked').value;
+  const addr = $('caddr');
+  addr.required = type === 'delivery';
+  addr.parentElement.classList.toggle('hidden', type !== 'delivery');
+  document.querySelectorAll('input[name=otype]').forEach(r => {
+    r.parentElement.className = `text-center py-2.5 rounded-lg text-sm font-bold cursor-pointer transition duration-300 ${r.checked ? 'btn-gold' : 'text-slate-400'}`;
+  });
+  $('co-total').textContent = money(totals(type).total);
+}
+document.addEventListener('change', e => { if (e.target.name === 'otype') updateCheckoutTotal(); });
+
+async function submitOrder(e) {
+  e.preventDefault();
+  const f = e.target;
+  const type = f.otype.value;
+  const name = f.cname.value.trim(), phone = f.cphone.value.trim(), addr = f.caddr.value.trim();
+  if (!name || !phone) return toast(t('needName'));
+  if (type === 'delivery' && !addr) return toast(t('needAddr'));
+  const tt = totals(type);
+  const order = {
+    id: '#RM-' + Date.now().toString().slice(-6),
+    time: new Date().toISOString(),
+    type, name, phone, address: type === 'delivery' ? addr : '',
+    pay: f.pay.value,
+    items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price, note: c.note })),
+    sub: tt.sub, disc: tt.disc, fee: tt.fee, total: tt.total,
+    status: 'new'
+  };
+  try {
+    await apiRequest('/api/orders', { method: 'POST', body: JSON.stringify(order) });
+  } catch (error) {
+    console.error('Unable to submit order:', error);
+    toast(error.message);
+    return;
+  }
+  if (isAdmin) orders.unshift(order);
+  cart = []; discount = 0; $('promo').value = '';
+  f.reset(); renderCart();
+  renderAdmin();
+  closeModal('checkout');
+  $('done-id').textContent = order.id;
+  const box = $('done').querySelector('.glass');
+  $('done').classList.remove('hidden');
+  box.classList.remove('modal-in'); void box.offsetWidth; box.classList.add('modal-in');
+}
+
+/* ================= STORAGE ================= */
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...options.headers }
+  });
+  const data = response.status === 204 ? null : await response.json();
+  if (!response.ok) {
+    const error = new Error(data?.error || `API request failed (${response.status})`);
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+async function adminRequest(path, options = {}) {
+  if (!adminToken) throw new Error('Admin login is required');
+  return apiRequest(path, {
+    ...options,
+    headers: { ...options.headers, Authorization: `Bearer ${adminToken}` }
+  });
+}
+async function loadOrders() {
+  orders = await adminRequest('/api/orders');
+}
+async function refreshAdmin(showError = false) {
+  if (!isAdmin || refreshingOrders) return;
+  refreshingOrders = true;
+  try {
+    await loadOrders();
+    renderAdmin();
+  } catch (error) {
+    console.error('Unable to refresh orders:', error);
+    if (error.status === 401) {
+      adminLogout();
+      $('admin-login').classList.remove('hidden');
+    }
+    if (showError || error.status === 401) toast(error.message);
+  } finally {
+    refreshingOrders = false;
+  }
+}
+
+/* ================= ADMIN ================= */
+function openAdmin() {
+  closeSides();
+  if (isAdmin) { $('admin-panel').classList.remove('hidden'); refreshAdmin(true); }
+  else { $('admin-login').classList.remove('hidden'); $('a-err').classList.add('hidden'); }
+}
+async function adminLogin() {
+  try {
+    const auth = await apiRequest('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: $('a-user').value.trim(), password: $('a-pass').value })
+    });
+    adminToken = auth.token;
+    await loadOrders();
+    isAdmin = true;
+    $('a-pass').value = '';
+    closeModal('admin-login');
+    $('admin-panel').classList.remove('hidden');
+    lastNew = orders.filter(o => o.status === 'new').length;
+    renderAdmin();
+  } catch (error) {
+    adminToken = null;
+    isAdmin = false;
+    $('a-err').classList.remove('hidden');
+    const box = $('login-box');
+    box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+    if (error.status !== 401) {
+      console.error('Unable to authenticate admin:', error);
+      toast(error.message);
+    }
+  }
+}
+function adminLogout() {
+  isAdmin = false;
+  adminToken = null;
+  $('admin-panel').classList.add('hidden');
+}
+
+async function advance(i, status) {
+  try {
+    await adminRequest(`/api/orders/${encodeURIComponent(orders[i].id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+    await loadOrders();
+    renderAdmin();
+    toast(status === 'prep' ? t('accepted') : status === 'cancel' ? t('rejected') : t('moved'));
+  } catch (error) {
+    console.error('Unable to update order:', error);
+    if (error.status === 401) { adminLogout(); $('admin-login').classList.remove('hidden'); }
+    toast(error.message);
+  }
+}
+async function deleteOrder(i) {
+  try {
+    await adminRequest(`/api/orders/${encodeURIComponent(orders[i].id)}`, { method: 'DELETE' });
+    await loadOrders();
+    renderAdmin();
+    toast(t('deleted'));
+  } catch (error) {
+    console.error('Unable to delete order:', error);
+    if (error.status === 401) { adminLogout(); $('admin-login').classList.remove('hidden'); }
+    toast(error.message);
+  }
+}
+function setFilter(f) { aFilter = f; renderAdmin(); }
+async function clearOrders() {
+  if (!confirm(t('clear') + '?')) return;
+  try {
+    await adminRequest('/api/orders', { method: 'DELETE' });
+    await loadOrders();
+    renderAdmin();
+  } catch (error) {
+    console.error('Unable to clear orders:', error);
+    if (error.status === 401) { adminLogout(); $('admin-login').classList.remove('hidden'); }
+    toast(error.message);
+  }
+}
+
+function filterLabel(f) { return f === 'all' ? t('f_all') : TX[lang].st[f]; }
+
+function actionButtons(o, i) {
+  if (o.status === 'new') return `
+    <button onclick="advance(${i},'prep')" class="act act-ok"><i class="fa-solid fa-check"></i> ${t('accept')}</button>
+    <button onclick="advance(${i},'cancel')" class="act act-no"><i class="fa-solid fa-xmark"></i> ${t('reject')}</button>`;
+  if (o.status === 'prep') return `<button onclick="advance(${i},'way')" class="act act-go"><i class="fa-solid fa-motorcycle"></i> ${t('next_way')}</button>`;
+  if (o.status === 'way') return `<button onclick="advance(${i},'done')" class="act act-ok"><i class="fa-solid fa-circle-check"></i> ${t('next_done')}</button>`;
+  return '';
+}
+
+function renderAdmin() {
+  if (!isAdmin) return;
+  const newCount = orders.filter(o => o.status === 'new').length;
+  const activeCount = orders.filter(o => o.status === 'prep' || o.status === 'way').length;
+  const revenue = orders.filter(o => o.status !== 'cancel').reduce((s, o) => s + o.total, 0);
+
+  const badge = $('new-badge');
+  badge.textContent = newCount || '';
+  badge.classList.toggle('hidden', !newCount);
+  if (newCount > lastNew) toast(t('newOrder'));
+  lastNew = newCount;
+
+  $('stat-total').textContent = orders.length;
+  $('stat-new').textContent = newCount;
+  $('stat-active').textContent = activeCount;
+  $('stat-rev').textContent = money(revenue);
+
+  $('a-filters').innerHTML = FILTERS.map(f => {
+    const n = f === 'all' ? orders.length : orders.filter(o => o.status === f).length;
+    return `<button onclick="setFilter('${f}')" class="px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition duration-300 ${aFilter === f ? 'btn-gold scale-105' : 'card text-slate-300'}">${filterLabel(f)} <span class="opacity-70 font-mono">(${n})</span></button>`;
+  }).join('');
+
+  const list = orders.map((o, i) => ({ o, i })).filter(x => aFilter === 'all' || x.o.status === aFilter);
+  if (!list.length) { $('admin-list').innerHTML = `<p class="text-center text-slate-500 py-16 fade-up">${t('none')}</p>`; return; }
+
+  $('admin-list').innerHTML = list.map(({ o, i }) => {
+    const animate = !seenOrders.has(o.id);
+    seenOrders.add(o.id);
+    return `
+    <div class="glass rounded-2xl p-5 ${animate ? 'fade-up' : ''} ${o.status === 'new' ? 'border border-gold-500/40' : ''}">
+      <div class="flex flex-wrap justify-between gap-3 mb-3">
+        <div>
+          <p class="font-black text-gold-400 font-mono">${o.id}</p>
+          <p class="text-xs text-slate-400">${new Date(o.time).toLocaleString()}</p>
+        </div>
+        <span class="badge b-${o.status} self-start">${TX[lang].st[o.status]}</span>
+      </div>
+      <p class="text-sm text-white"><i class="fa-solid fa-user text-slate-500"></i> ${esc(o.name)} · <span dir="ltr">${esc(o.phone)}</span></p>
+      <p class="text-sm text-slate-400 mt-1">${o.type === 'delivery' ? t('delivery_to') + ': ' + esc(o.address) : t('takeaway')} · ${t('pay')}: ${o.pay === 'cash' ? t('cash') : t('card')}</p>
+      <ul class="text-sm mt-3 space-y-1 border-t border-slate-800 pt-3">
+        ${o.items.map(it => `<li>${it.qty} × ${esc(it.name)} ${it.note ? '<span class="text-slate-500">(' + esc(it.note) + ')</span>' : ''} <span class="font-mono text-slate-400">${money(it.price * it.qty)}</span></li>`).join('')}
+      </ul>
+      <div class="flex flex-wrap justify-between items-center gap-3 mt-4 pt-3 border-t border-slate-800">
+        <div class="flex flex-wrap gap-2">${actionButtons(o, i)}</div>
+        <div class="flex items-center gap-4">
+          <button onclick="deleteOrder(${i})" class="act-del">${t('del')}</button>
+          <span class="font-black text-gold-400 font-mono">${t('total')}: ${money(o.total)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= UTIL ================= */
+function closeModal(id) { $(id).classList.add('hidden'); }
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.remove('hidden', 'toast-in');
+  void el.offsetWidth;
+  el.classList.add('toast-in');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.add('hidden'), 2800);
+}
+
+/* ================= INIT ================= */
+function openPicker() { $('lang-picker').classList.remove('hidden'); }
+window.addEventListener('load', () => {
+  setLang('ku');
+  $('lang-picker').classList.remove('hidden');
+  revealAll();
+  setInterval(() => { if (isAdmin) refreshAdmin(); }, 5000);
+});
+</script>
+</body>
+</html>
